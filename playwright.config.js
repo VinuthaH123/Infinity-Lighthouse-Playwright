@@ -1,40 +1,67 @@
-const { defineConfig } = require('@playwright/test');
+// @ts-check
+import { defineConfig, devices } from '@playwright/test';
 
-module.exports = defineConfig({
+export default defineConfig({
   testDir: './tests',
-  timeout: 90000,
-  retries: 0,
-  workers: 1,
 
-  use: {
-    baseURL: 'https://infinity.starlajewels.com',
-    headless: true,
+  /* Global timeout */
+  timeout: 90 * 1000,
+
+  expect: {
+    timeout: 5000,
   },
 
+  /* Run tests in parallel */
+  fullyParallel: false,
+
+  /* Retries */
+  retries: process.env.CI ? 1 : 0,
+
+  /* Workers */
+  //workers: process.env.CI ? 1 : 1,
+
+  /* Reporter */
+
+    reporter: [['html', { open: 'never' }]],
+
+
+  /* Shared settings */
+  use: {
+    baseURL: 'https://infinity.starlajewels.com',
+    trace: 'retain-on-failure',
+    //screenshot: 'only-on-failure',
+   // video: 'retain-on-failure',
+  },
+
+  /* Projects */
   projects: [
+    // -----------------------------------------
+    // 1️⃣ NORMAL UI TESTS (NO LIGHTHOUSE)
+    // -----------------------------------------
     {
       name: 'Desktop Chrome',
       use: {
-        browserName: 'chromium',
-        viewport: { width: 1920, height: 1080 },
+        ...devices['Desktop Chrome'],
       },
+      testIgnore: /.*\.lh\.spec\.js/, // 👈 IMPORTANT
     },
 
-    // ✅ Lighthouse-only project
+    // -----------------------------------------
+    // 2️⃣ LIGHTHOUSE TESTS ONLY
+    // -----------------------------------------
     {
       name: 'Lighthouse Chrome',
       use: {
         browserName: 'chromium',
-            channel: 'chrome', // ✅ IMPORTANT
-          headless: true,
-
-        viewport: { width: 1920, height: 1080 },
         launchOptions: {
-          args: ['--remote-debugging-port=9222'],
+          args: [
+            '--remote-debugging-port=9222', // 👈 REQUIRED
+            '--no-sandbox',
+            '--disable-dev-shm-usage',
+          ],
         },
       },
+      testMatch: /.*\.lh\.spec\.js/, // 👈 IMPORTANT
     },
   ],
-
-  reporter: [['html', { open: 'never' }]],
 });
